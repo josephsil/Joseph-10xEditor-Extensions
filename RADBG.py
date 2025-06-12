@@ -16,44 +16,6 @@ from N10X import Editor
 # raddbgPushBreakPointUpdates: false  #Mirror breakpoint remove/add actions from 10x to raddbg 
 # raddbgProjectPath: "./MyraddbgProject" #Specify a workspace name (relative to the project) to pass to raddbg
 
-#Settings:      
-
-
-# Experimented with parsing breakpoints from the raddbg project file. Doesn't seem practical, seems like it doesn't update consistently enough
-# def WatchWorkspace():
-#     global gBreakpoints
-#     global gOptions
-#     global suppressBreakpoints 
-#     suppressBreakpoints = False #reset suppress bp
-#     breakpoints = []
-#     workspaceFile = gOptions.workspace.strip().replace('"', "")
-#     if (workspaceFile.startswith("./", 0, 2)):
-#             workspaceFile = workspaceFile[2:] #Remove relative path prefix
-#     workpacePath = os.path.join(Editor.GetDebugCommandCwd().strip(), gOptions.workspace.strip().replace('"', "")) #todo, handle / etc 
-
-#     relativepathroot = Editor.GetDebugCommandCwd().strip()
-#     suppressBreakpoints = True 
-#     lines = []
-#     readingbp = False
-#     with open(workpacePath, "r") as f: 
-#         lines = f.readlines()
-#     for l in lines:
-#         regexmatch = re.search(r"(?:source_location: \")(.*)\:(\d+):(\d+)\"", l)
-#         if regexmatch:
-#             bp = regexmatch.groups() 
-#             breakpoints.append(bp)
-
-#     if (len(breakpoints) != len(gBreakpoints) or breakpoints != gBreakpoints):
-#         print("new bp")
-#         gBreakpoints = breakpoints
-#         Editor.RemoveAllBreakpoints()
-#         for b in breakpoints: 
-#             print("unpack")
-#             p, num, _ = b;
-#             print(f"{os.path.join(relativepathroot,p)} ")
-
-#             Editor.AddBreakpoint(os.path.join(relativepathroot,p), int(num))
-
 class RADBG_Options():
     def __init__(self):
         self.enabled = Editor.GetSetting("raddbg").strip()
