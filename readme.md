@@ -1,5 +1,5 @@
 # Minimal raddbg integration for 10x editor. 
-Presented as is
+As is. Tested on 10X editor 1.0.320 and Raddbg 0.9.19 ALPHA
 
 Inspired by ["RemedyBG debugger integration for 10x (10xeditor.com)"](https://github.com/slynch8/10x/blob/main/PythonScripts/RemedyBG/RemedyBG.py) by septag@pm.me
 
