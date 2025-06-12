@@ -92,7 +92,7 @@ def OverwriteRADBGBreakPoints():
     RadgbFunctions.QueueCommand("clear_breakpoints")
     points = Editor.GetBreakpoints()
     for bp in points:
-        AddBreakpoint(bp[0], bp[1], bp[2])
+        X10Commands.AddBreakpoint(bp[0], bp[1], bp[2])
 
 def SendRaddbgCommand(str):
     RadgbFunctions.QueueCommand(str)
@@ -116,6 +116,8 @@ class RadgbFunctions:
         global gradbgSession
         if not RadgbFunctions.SessionIsActive(gradbgSession): #start a new session
             gradbgSession = RADBG_Session()
+        else:
+            Editor.OnDebuggerStopped() #Let 10x know it's starting a new session
         gradbgSession.StartDebuggingradbgSession(cmd, cwd, path, workspace)
 
     @staticmethod 
@@ -194,6 +196,11 @@ class X10Commands():
         if gOptions.pushBreakPoints:
                 RadgbFunctions.QueueCommand(f"toggle_breakpoint {filename}:{line}")
 
+    @staticmethod
+    def SwallowBreakpointEvent(_,_1,_2):
+        return
+
+
 def Update():
     global gradbgSession
     global gOptions
@@ -210,14 +217,10 @@ def Update():
             Editor.OnDebuggerStopped() #We lost the debugger 
             gradbgSession = None
             return
-    # if gOptions.syncBreakpointUpdatesRTo10x:
-        # WatchWorkspace()
 
     RADBG_lostConnectionPollCounter = (RADBG_lostConnectionPollCounter + 1) % 6 #only update every 6 frames
     
 
-def nop():
-    return
 
 def InitializeRaddbg():
     global gRestarting
@@ -237,7 +240,7 @@ def InitializeRaddbg():
     
     Editor.AddBreakpointAddedFunction(X10Commands.AddBreakpoint)
     Editor.AddBreakpointRemovedFunction(X10Commands.RemoveBreakpoint)
-    Editor.AddBreakpointUpdatedFunction(nop)
+    Editor.AddBreakpointUpdatedFunction(X10Commands.SwallowBreakpointEvent)
     Editor.AddStartDebuggingFunction(X10Commands.StartDebugging)
     Editor.AddStopDebuggingFunction(X10Commands.StopDebugging)
     Editor.AddRestartDebuggingFunction(X10Commands.RestartDebugging)
