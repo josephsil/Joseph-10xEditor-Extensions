@@ -40,22 +40,21 @@ class RADBG_Session:
         self.commandQueue = deque()
         self.queuesize = 0
 
-    def StartDebuggingradbgSession(self, argtgt, argcwd, executable, project):
+    def LaunchDebuggerradbgSession(self, argtgt, argcwd, executable, project):
         global RADBG_pid
 
-        if (self.process != None and self.process.poll() is None): #Process already exists -- just send run 
-            self.PushIPC("run")
+        if (self.process != None and self.process.poll() is None): #Process already exists
             return
         
         projectArgs = ""
         if (project != ""):
             projectArgs = f" --project:{project}"
-        args = f"{executable} {projectArgs} --auto_run {argtgt}" #Auto run target
+        args = f"{executable} {projectArgs} {argtgt}"
       
         print(args)
         self.process = subprocess.Popen(args, cwd=argcwd)
         RADBG_pid = self.process.pid
-        Editor.OnDebuggerStarted()
+      
 
     def stop(self):
         global gradbgSession
@@ -112,13 +111,13 @@ class RadgbFunctions:
         return session is not None and session.process.poll() is None
 
     @staticmethod 
-    def StartDebugging(cmd, cwd, path, workspace):
+    def LaunchDebugger(cmd, cwd, path, workspace):
         global gradbgSession
         if not RadgbFunctions.SessionIsActive(gradbgSession): #start a new session
             gradbgSession = RADBG_Session()
         else:
             Editor.OnDebuggerStopped() #Let 10x know it's starting a new session
-        gradbgSession.StartDebuggingradbgSession(cmd, cwd, path, workspace)
+        gradbgSession.LaunchDebuggerradbgSession(cmd, cwd, path, workspace)
 
     @staticmethod 
     def StopDebugging():
@@ -146,7 +145,7 @@ class X10Commands():
         if gRestarting:
             gRestarting = False 
         else:
-            RadgbFunctions.StartDebugging(
+            RadgbFunctions.LaunchDebugger(
                 Editor.GetDebugCommand().strip(), 
                 Editor.GetDebugCommandCwd().strip(),
                 gOptions.executable, gOptions.workspace)
@@ -154,6 +153,10 @@ class X10Commands():
         if gOptions.overrideBreakpoints:
             OverwriteRADBGBreakPoints() 
 
+        SendRaddbgCommand(f"run")
+        # Would like to run the specific target, but not sure how the command works 
+        # SendRaddbgCommand(f"launch_and_run {Editor.GetDebugCommand().strip()}") 
+        Editor.OnDebuggerStarted()
         radDbgGoToCursors()
 
     @staticmethod
