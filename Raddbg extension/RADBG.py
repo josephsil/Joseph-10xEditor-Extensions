@@ -35,10 +35,11 @@ class RADBG_Options():
 
 
 class RADBG_Session:
-    def __init__(self):
+    def __init__(self, raddbgpath):
         self.process:subprocess.Popen = None
         self.commandQueue = deque()
         self.queuesize = 0
+        self.path = raddbgpath
 
     def LaunchDebuggerradbgSession(self, argtgt, argcwd, executable, project):
         global RADBG_pid
@@ -66,7 +67,7 @@ class RADBG_Session:
 
     def PushIPC(self, _str):
         debug_cwd = Editor.GetDebugCommandCwd().strip()
-        executable = "C:/Users/supsu/raddbg/raddbg.exe"
+        executable =  self.path
         args =executable + " " + "--ipc" + " " + ' '.join('"'+s+'"' for s in _str.split(' ')) #Need to wrap ipc args in quotes 
         print(args)
         print(debug_cwd)
@@ -83,7 +84,7 @@ class RADBG_Session:
             self.queuesize -= 1
             proc = subprocess.Popen(command[0], cwd=command[1])
             while(proc.poll() is None): #Wait for our command to exit
-                time.sleep(1 / 10000)
+                time.sleep(1 / 1000)
 
 
 
@@ -113,8 +114,9 @@ class RadgbFunctions:
     @staticmethod 
     def LaunchDebugger(cmd, cwd, path, workspace):
         global gradbgSession
+        global gOptions
         if not RadgbFunctions.SessionIsActive(gradbgSession): #start a new session
-            gradbgSession = RADBG_Session()
+            gradbgSession = RADBG_Session(gOptions.executable)
         else:
             Editor.OnDebuggerStopped() #Let 10x know it's starting a new session
         gradbgSession.LaunchDebuggerradbgSession(cmd, cwd, path, workspace)
