@@ -18,6 +18,7 @@ from N10X import Editor
 
 class RADBG_Options():
     def __init__(self):
+        self.BuildOnPlay = Editor.GetSetting("BuildBeforeStartDebugging").strip()
         self.enabled = Editor.GetSetting("raddbg").strip()
         if not self.enabled: 
             return
@@ -139,10 +140,9 @@ class RadgbFunctions:
 
 class X10Commands():
     @staticmethod
-    def StartDebugging(): 
+    def ConnectDebugger():
         global gRestarting
         global gOptions
-
         #If we're restarting, don't launch the debugger, but do the other setup work
         if gRestarting:
             gRestarting = False 
@@ -155,11 +155,38 @@ class X10Commands():
         if gOptions.overrideBreakpoints:
             OverwriteRADBGBreakPoints() 
 
-        SendRaddbgCommand(f"run")
         # Would like to run the specific target, but not sure how the command works 
         # SendRaddbgCommand(f"launch_and_run {Editor.GetDebugCommand().strip()}") 
         Editor.OnDebuggerStarted()
+        SendRaddbgCommand(f"run")
         radDbgGoToCursors()
+    
+    #Workaround to make sure we can recompile scripts before launching the debugger
+ 
+    @staticmethod 
+    def BuildFinishedHook(succeeded):
+        global gDeferConnectDebugger
+        if (gDeferConnectDebugger):
+            gDeferConnectDebugger = False
+            if succeeded:
+                X10Commands.ConnectDebugger()
+
+       # Editor.OnBuildFinished("")
+        
+    @staticmethod
+    def StartDebugging(): 
+        global gradbgSession
+        global gDeferConnectDebugger
+        
+        #Workaround/Hack to ensure we recompile: Set #gDeferConnectDebugger and initiate a compile
+        #On BuildFinishedHook() we'll run ConnectDebugger().
+        if (gOptions.BuildOnPlay and RadgbFunctions.SessionIsActive(gradbgSession)):
+             gradbgSession.PushIPC("kill_all") 
+             gDeferConnectDebugger = True
+             Editor.ExecuteCommand("BuildActiveWorkspace")
+             return
+        X10Commands.ConnectDebugger()
+        
 
     @staticmethod
     def StopDebugging():
@@ -232,7 +259,7 @@ def InitializeRaddbg():
     global suppressBreakpoints
     global gOptions
     global gBreakpoints
-
+    global gDeferConnectDebugger
    
 
     gOptions = RADBG_Options()
@@ -242,6 +269,8 @@ def InitializeRaddbg():
     gBreakpoints = []
     gRestarting = False
     suppressBreakpoints = False
+    gDeferConnectDebugger = False
+
     
     Editor.AddBreakpointAddedFunction(X10Commands.AddBreakpoint)
     Editor.AddBreakpointRemovedFunction(X10Commands.RemoveBreakpoint)
@@ -249,6 +278,7 @@ def InitializeRaddbg():
     Editor.AddStartDebuggingFunction(X10Commands.StartDebugging)
     Editor.AddStopDebuggingFunction(X10Commands.StopDebugging)
     Editor.AddRestartDebuggingFunction(X10Commands.RestartDebugging)
+    Editor.AddBuildFinishedFunction(X10Commands.BuildFinishedHook)
     Editor.AddUpdateFunction(Update)
     
     Editor.OverrideSetting('VisualStudioSync', 'false')
@@ -258,4 +288,3 @@ gradbgSession:RADBG_Session = None
 RADBG_pid = None 
 RADBG_lostConnectionPollCounter = 0
 Editor.CallOnMainThread(InitializeRaddbg)
-
