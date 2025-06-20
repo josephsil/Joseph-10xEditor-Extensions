@@ -162,30 +162,33 @@ def ReplaceAuto_WIP():
     symbol = Editor.GetSymbolDefinition((x,y))
     line = Editor.GetLine(y)
     if ("auto" in line):
-        pattern = r"[=:][\s*]"
+        assignmentPattern = r"[=:][\s*]"
         #find the : or = assignment character
-        match = re.search(pattern, line)
-        if (match):
-            x = match.end()
+        assignmentMatch = re.search(assignmentPattern, line)
+        if (assignmentMatch):
+            x = assignmentMatch.end()
             #Find the symbol 
             x, y = ReplaceAutoFunctions.PushIndexToCorrectSymbol(ReplaceAutoFunctions.AccumulateLines(line,x ,y), x,y)
+            arrayAccessPattern = r"(\[.+\])"
+            symbolText = Editor.GetLine(y)[x:]
+            symbolText = re.split(r"[;\n\s\r]+", symbolText)[0].strip()
+            arrayAccessSearch = re.search(arrayAccessPattern,symbolText)
+            isArrayAccess = arrayAccessSearch and len(arrayAccessSearch.groups()) == 1 #TODO: Need a stack to handle multiple depth arrays
             referenceSymbol =  ReplaceAutoFunctions.GetDefinitionBody(Editor.GetSymbolDefinition((x,y)))
             #Replace auto with something from the symbol definition
             #TODO This foreach/equals case separation is bad -- parse properly
-            if (':' in match.group()):
+            autoReplace = ""
+            if (':' in assignmentMatch.group() or isArrayAccess):
                 #Foreach case 
-                foreachReplace = ReplaceAutoFunctions.SubstituteTypeFromIndexedAccess(line, referenceSymbol)
-                if (foreachReplace != ""):
-                    print(foreachReplace)
-                    Editor.SetLine(targetLine, foreachReplace)
-                    return 
-            if ('=' in match.group()):
+                autoReplace = ReplaceAutoFunctions.SubstituteTypeFromIndexedAccess(line, referenceSymbol)
+                
+            elif ('=' in assignmentMatch.group()):
                 #Equals case
-                variableReplace = ReplaceAutoFunctions.RegexTryReplaceRegular(line, referenceSymbol)
-                if (variableReplace != ""):
-                    print(variableReplace)
-                    Editor.SetLine(targetLine, variableReplace)
-                    return
+                autoReplace = ReplaceAutoFunctions.RegexTryReplaceRegular(line, referenceSymbol)
+            if (autoReplace != ""):
+                    print(autoReplace)
+                    Editor.SetLine(targetLine, autoReplace)
+                    return 
                 
             
         
